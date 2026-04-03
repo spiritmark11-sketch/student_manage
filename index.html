@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>学生管理系统</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+      :root {
+        --bg: #f3f6ff;
+        --panel: #ffffff;
+        --primary: #4f46e5;
+        --primary-soft: #eef0ff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --success: #16a34a;
+        --warning: #d97706;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at top right, #dbeafe 0%, var(--bg) 45%, #eef2ff 100%);
+        min-height: 100vh;
+      }
+
+      .app {
+        max-width: 1150px;
+        margin: 0 auto;
+        padding: 30px 18px 40px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 22px;
+      }
+
+      .title {
+        margin: 0;
+        font-size: 30px;
+      }
+
+      .subtitle {
+        margin-top: 6px;
+        color: var(--muted);
+      }
+
+      .panel {
+        background: var(--panel);
+        border-radius: 18px;
+        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+        padding: 20px;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      .stat-card {
+        padding: 16px;
+        border-radius: 14px;
+        background: var(--primary-soft);
+      }
+
+      .stat-card .label { color: var(--muted); font-size: 14px; }
+      .stat-card .value { font-size: 30px; margin-top: 6px; font-weight: 700; color: var(--primary); }
+
+      .toolbar {
+        margin-bottom: 16px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .input,
+      .select {
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        background: #fff;
+        min-width: 180px;
+      }
+
+      .btn {
+        border: 0;
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #fff;
+        background: var(--primary);
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .btn.secondary {
+        background: #334155;
+      }
+
+      .table-wrap {
+        overflow: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 760px;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      th {
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      .tag {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .excellent {
+        background: #dcfce7;
+        color: var(--success);
+      }
+
+      .normal {
+        background: #fef3c7;
+        color: var(--warning);
+      }
+
+      .danger {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .empty {
+        color: var(--muted);
+        text-align: center;
+        padding: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="app">
+      <header class="header">
+        <div>
+          <h1 class="title">学生管理系统</h1>
+          <div class="subtitle">Vue 3 静态演示版 · 可搜索、筛选与排序</div>
+        </div>
+        <button class="btn secondary" @click="reset">重置筛选</button>
+      </header>
+
+      <section class="stats">
+        <article class="stat-card">
+          <div class="label">学生总数</div>
+          <div class="value">{{ students.length }}</div>
+        </article>
+        <article class="stat-card">
+          <div class="label">平均分</div>
+          <div class="value">{{ averageScore }}</div>
+        </article>
+        <article class="stat-card">
+          <div class="label">优秀人数（≥90）</div>
+          <div class="value">{{ excellentCount }}</div>
+        </article>
+        <article class="stat-card">
+          <div class="label">当前展示</div>
+          <div class="value">{{ filteredStudents.length }}</div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="toolbar">
+          <input class="input" v-model="keyword" placeholder="搜索姓名/学号" />
+          <select class="select" v-model="classFilter">
+            <option value="">全部班级</option>
+            <option v-for="c in classes" :key="c" :value="c">{{ c }}</option>
+          </select>
+          <select class="select" v-model="sortBy">
+            <option value="score-desc">按成绩：从高到低</option>
+            <option value="score-asc">按成绩：从低到高</option>
+            <option value="name">按姓名</option>
+          </select>
+          <button class="btn" @click="shuffleData">随机示例顺序</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>学号</th>
+                <th>姓名</th>
+                <th>班级</th>
+                <th>性别</th>
+                <th>成绩</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in filteredStudents" :key="item.id">
+                <td>{{ item.id }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.className }}</td>
+                <td>{{ item.gender }}</td>
+                <td>{{ item.score }}</td>
+                <td>
+                  <span class="tag" :class="scoreTag(item.score).className">{{ scoreTag(item.score).label }}</span>
+                </td>
+              </tr>
+              <tr v-if="!filteredStudents.length">
+                <td colspan="6" class="empty">没有符合条件的数据</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+
+      createApp({
+        data() {
+          return {
+            keyword: "",
+            classFilter: "",
+            sortBy: "score-desc",
+            students: [
+              { id: "2026001", name: "李晨", className: "高一(1)班", gender: "男", score: 93 },
+              { id: "2026002", name: "王悦", className: "高一(1)班", gender: "女", score: 88 },
+              { id: "2026003", name: "赵宁", className: "高一(2)班", gender: "男", score: 76 },
+              { id: "2026004", name: "陈思", className: "高一(2)班", gender: "女", score: 95 },
+              { id: "2026005", name: "周宇", className: "高一(3)班", gender: "男", score: 82 },
+              { id: "2026006", name: "刘婷", className: "高一(3)班", gender: "女", score: 91 },
+              { id: "2026007", name: "吴凡", className: "高一(1)班", gender: "男", score: 67 },
+              { id: "2026008", name: "宋佳", className: "高一(2)班", gender: "女", score: 85 }
+            ]
+          };
+        },
+        computed: {
+          classes() {
+            return [...new Set(this.students.map((s) => s.className))];
+          },
+          averageScore() {
+            const total = this.students.reduce((sum, s) => sum + s.score, 0);
+            return (total / this.students.length).toFixed(1);
+          },
+          excellentCount() {
+            return this.students.filter((s) => s.score >= 90).length;
+          },
+          filteredStudents() {
+            const key = this.keyword.trim();
+            const matched = this.students.filter((s) => {
+              const textMatch = !key || s.name.includes(key) || s.id.includes(key);
+              const classMatch = !this.classFilter || s.className === this.classFilter;
+              return textMatch && classMatch;
+            });
+
+            return matched.sort((a, b) => {
+              if (this.sortBy === "score-asc") return a.score - b.score;
+              if (this.sortBy === "score-desc") return b.score - a.score;
+              return a.name.localeCompare(b.name, "zh-Hans-CN");
+            });
+          }
+        },
+        methods: {
+          scoreTag(score) {
+            if (score >= 90) return { label: "优秀", className: "excellent" };
+            if (score >= 75) return { label: "良好", className: "normal" };
+            return { label: "待提升", className: "danger" };
+          },
+          shuffleData() {
+            this.students = [...this.students].sort(() => Math.random() - 0.5);
+          },
+          reset() {
+            this.keyword = "";
+            this.classFilter = "";
+            this.sortBy = "score-desc";
+          }
+        }
+      }).mount("#app");
+    </script>
+  </body>
+</html>
