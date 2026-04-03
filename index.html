@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>学生管理系统</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+      :root {
+        --bg: #f4f7ff;
+        --card: #ffffff;
+        --primary: #4c6fff;
+        --primary-soft: #e8edff;
+        --text: #1f2a44;
+        --subtext: #6c7793;
+        --danger: #f05d6c;
+        --border: #e7ebf7;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #eef2ff 0%, #f9fbff 100%);
+        color: var(--text);
+      }
+
+      .app {
+        min-height: 100vh;
+        padding: 28px;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        display: grid;
+        gap: 20px;
+      }
+
+      .hero {
+        background: radial-gradient(circle at top right, #7e94ff 0%, #4c6fff 42%, #3a56d1 100%);
+        color: #fff;
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 14px 40px rgba(58, 86, 209, 0.25);
+      }
+
+      .hero h1 {
+        margin: 0 0 10px;
+        font-size: 28px;
+      }
+
+      .hero p {
+        margin: 0;
+        opacity: 0.92;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+      }
+
+      .stat-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 24px rgba(76, 111, 255, 0.08);
+      }
+
+      .stat-title {
+        color: var(--subtext);
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+
+      .stat-value {
+        font-size: 30px;
+        font-weight: 700;
+      }
+
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 10px 28px rgba(39, 64, 172, 0.08);
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .input,
+      .select {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 12px;
+        outline: none;
+        background: #fff;
+        color: var(--text);
+      }
+
+      .input:focus,
+      .select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(76, 111, 255, 0.15);
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        border: 0;
+        border-radius: 12px;
+        padding: 10px 16px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: #fff;
+      }
+
+      .btn-soft {
+        background: var(--primary-soft);
+        color: var(--primary);
+      }
+
+      .btn-danger {
+        background: #ffe8eb;
+        color: var(--danger);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 14px;
+      }
+
+      thead {
+        background: #f7f9ff;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      tbody tr:hover {
+        background: #f9fbff;
+      }
+
+      .badge {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        background: var(--primary-soft);
+        color: var(--primary);
+      }
+
+      .empty {
+        text-align: center;
+        color: var(--subtext);
+        padding: 20px 0;
+      }
+
+      @media (max-width: 768px) {
+        .app {
+          padding: 16px;
+        }
+
+        .toolbar {
+          grid-template-columns: 1fr;
+        }
+
+        .actions {
+          justify-content: flex-start;
+          flex-wrap: wrap;
+        }
+
+        th:nth-child(4),
+        td:nth-child(4) {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="app">
+      <div class="container">
+        <header class="hero">
+          <h1>🎓 学生管理系统</h1>
+          <p>Vue 3 静态页面示例：支持新增、编辑、删除、搜索和班级筛选。</p>
+        </header>
+
+        <section class="stats">
+          <article class="stat-card">
+            <div class="stat-title">学生总数</div>
+            <div class="stat-value">{{ students.length }}</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-title">平均成绩</div>
+            <div class="stat-value">{{ averageScore }}</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-title">班级数量</div>
+            <div class="stat-value">{{ classCount }}</div>
+          </article>
+        </section>
+
+        <section class="panel">
+          <h2>{{ editingId ? '编辑学生信息' : '新增学生信息' }}</h2>
+          <div class="form-grid">
+            <input class="input" v-model.trim="form.name" placeholder="姓名" />
+            <input class="input" v-model.number="form.age" type="number" min="1" placeholder="年龄" />
+            <input class="input" v-model.trim="form.className" placeholder="班级（如：高一(1)班）" />
+            <input class="input" v-model.number="form.score" type="number" min="0" max="100" placeholder="成绩" />
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" @click="saveStudent">{{ editingId ? '保存修改' : '添加学生' }}</button>
+            <button class="btn btn-soft" @click="resetForm">重置</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="toolbar">
+            <input class="input" v-model.trim="search" placeholder="搜索姓名或班级" />
+            <select class="select" v-model="classFilter">
+              <option value="">全部班级</option>
+              <option v-for="item in classes" :key="item" :value="item">{{ item }}</option>
+            </select>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>姓名</th>
+                <th>年龄</th>
+                <th>班级</th>
+                <th>成绩</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in filteredStudents" :key="item.id">
+                <td>{{ item.name }}</td>
+                <td>{{ item.age }}</td>
+                <td>{{ item.className }}</td>
+                <td>{{ item.score }}</td>
+                <td>
+                  <span class="badge">{{ item.score >= 60 ? '通过' : '待提升' }}</span>
+                </td>
+                <td class="actions">
+                  <button class="btn btn-soft" @click="editStudent(item)">编辑</button>
+                  <button class="btn btn-danger" @click="removeStudent(item.id)">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p class="empty" v-if="!filteredStudents.length">暂无符合条件的学生数据。</p>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+
+      createApp({
+        data() {
+          return {
+            search: '',
+            classFilter: '',
+            editingId: null,
+            form: {
+              name: '',
+              age: null,
+              className: '',
+              score: null,
+            },
+            students: [
+              { id: 1, name: '李明', age: 16, className: '高一(1)班', score: 88 },
+              { id: 2, name: '王婷', age: 17, className: '高一(2)班', score: 94 },
+              { id: 3, name: '赵磊', age: 16, className: '高一(1)班', score: 59 },
+            ],
+          };
+        },
+        computed: {
+          classes() {
+            return [...new Set(this.students.map((item) => item.className))];
+          },
+          classCount() {
+            return this.classes.length;
+          },
+          averageScore() {
+            if (!this.students.length) return 0;
+            const total = this.students.reduce((sum, item) => sum + Number(item.score || 0), 0);
+            return (total / this.students.length).toFixed(1);
+          },
+          filteredStudents() {
+            return this.students.filter((item) => {
+              const keyword = this.search.toLowerCase();
+              const matchKeyword =
+                !keyword || item.name.toLowerCase().includes(keyword) || item.className.toLowerCase().includes(keyword);
+              const matchClass = !this.classFilter || item.className === this.classFilter;
+              return matchKeyword && matchClass;
+            });
+          },
+        },
+        methods: {
+          resetForm() {
+            this.editingId = null;
+            this.form = { name: '', age: null, className: '', score: null };
+          },
+          validateForm() {
+            const { name, age, className, score } = this.form;
+            if (!name || !className) {
+              alert('姓名和班级不能为空');
+              return false;
+            }
+            if (!(age > 0)) {
+              alert('年龄必须大于 0');
+              return false;
+            }
+            if (!(score >= 0 && score <= 100)) {
+              alert('成绩必须在 0~100 之间');
+              return false;
+            }
+            return true;
+          },
+          saveStudent() {
+            if (!this.validateForm()) return;
+            const payload = {
+              name: this.form.name,
+              age: Number(this.form.age),
+              className: this.form.className,
+              score: Number(this.form.score),
+            };
+
+            if (this.editingId) {
+              this.students = this.students.map((item) =>
+                item.id === this.editingId ? { ...item, ...payload } : item
+              );
+            } else {
+              this.students.push({ id: Date.now(), ...payload });
+            }
+            this.resetForm();
+          },
+          editStudent(item) {
+            this.editingId = item.id;
+            this.form = {
+              name: item.name,
+              age: item.age,
+              className: item.className,
+              score: item.score,
+            };
+          },
+          removeStudent(id) {
+            this.students = this.students.filter((item) => item.id !== id);
+            if (this.editingId === id) this.resetForm();
+          },
+        },
+      }).mount('#app');
+    </script>
+  </body>
+</html>
